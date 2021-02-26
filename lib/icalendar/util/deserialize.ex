@@ -6,6 +6,8 @@ defmodule ICalendar.Util.Deserialize do
   alias ICalendar.Event
   alias ICalendar.Property
 
+  require Logger
+
   def build_event(lines) when is_list(lines) do
     lines
     |> Enum.filter(&(&1 != ""))
@@ -261,14 +263,15 @@ defmodule ICalendar.Util.Deserialize do
       ...> [Timex.to_erl(date), date.time_zone]
       [{{1998, 1, 19}, {2, 0, 0}}, "America/Chicago"]
   """
-  def to_date(date_string, %{"TZID" => timezone}) do
+  def to_date(date_string, %{"TZID" => tzid}) do
     # Microsoft Outlook calendar .ICS files report times in Greenwich Standard Time (UTC +0)
     # so just convert this to UTC
-    timezone =
-      if Regex.match?(~r/\//, timezone) do
-        timezone
-      else
-        Timex.Timezone.Utils.to_olson(timezone)
+    {timezone, timezone_format} =
+      cond do
+        Regex.match?(~r/\//, tzid) -> {tzid, "{Zname}"}
+        Regex.match?(~r/^GMT.[0-9][0-9][0-9][0-9]/, tzid) -> {String.slice(tzid, 3, 7), "{Z}" }
+        Regex.match?(~r/^GMT.[0-9][0-9]/, tzid) -> {String.slice(tzid, 3, 5) <> "00", "{Z}"}
+        true -> {Timex.Timezone.Utils.to_olson(tzid), "{Zname}"}
       end
 
     date_string =
@@ -277,7 +280,12 @@ defmodule ICalendar.Util.Deserialize do
         _ -> date_string <> "Z"
       end
 
-    Timex.parse(date_string <> timezone, "{YYYY}{0M}{0D}T{h24}{m}{s}Z{Zname}")
+    if timezone == nil do
+        Logger.error("Error processing time zone #{tzid} (time #{date_string})")
+        nil
+    else
+        Timex.parse(date_string <> timezone, "{YYYY}{0M}{0D}T{h24}{m}{s}Z" <> timezone_format)
+    end
   end
 
   def to_date(date_string, %{"VALUE" => "DATE"}) do
