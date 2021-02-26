@@ -67,6 +67,14 @@ defmodule ICalendar.Util.Deserialize do
   def parse_attr(%Property{key: _, value: nil}, acc), do: acc
 
   def parse_attr(
+        %Property{key: "CREATED", value: created, params: params},
+        acc
+      ) do
+    {:ok, timestamp} = to_date(created, params)
+    %{acc | created: timestamp}
+  end
+
+  def parse_attr(
         %Property{key: "DESCRIPTION", value: description},
         acc
       ) do
@@ -87,6 +95,14 @@ defmodule ICalendar.Util.Deserialize do
       ) do
     {:ok, timestamp} = to_date(dtend, params)
     %{acc | dtend: timestamp}
+  end
+
+  def parse_attr(
+        %Property{key: "DTSTAMP", value: dtstamp, params: params},
+        acc
+      ) do
+    {:ok, timestamp} = to_date(dtstamp, params)
+    %{acc | dtstamp: timestamp}
   end
 
   def parse_attr(
@@ -132,10 +148,24 @@ defmodule ICalendar.Util.Deserialize do
   end
 
   def parse_attr(
+        %Property{key: "METHOD", value: method},
+        acc
+      ) do
+    %{acc | method: desanitized(method)}
+  end
+
+  def parse_attr(
         %Property{key: "STATUS", value: status},
         acc
       ) do
     %{acc | status: status |> desanitized() |> String.downcase()}
+  end
+
+  def parse_attr(
+        %Property{key: "TRANSP", value: transp},
+        acc
+      ) do
+    %{acc | transp: transp |> desanitized() |> String.downcase()}
   end
 
   def parse_attr(

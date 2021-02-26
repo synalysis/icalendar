@@ -4,14 +4,17 @@ defmodule ICalendar.Event do
   """
 
   defstruct summary: nil,
+            dtstamp: nil,
             dtstart: nil,
             dtend: nil,
+            created: nil,
             rrule: nil,
             exdates: [],
             description: nil,
             location: nil,
             url: nil,
             uid: nil,
+            method: nil,
             prodid: nil,
             status: nil,
             categories: nil,
@@ -21,6 +24,7 @@ defmodule ICalendar.Event do
             modified: nil,
             organizer: nil,
             sequence: nil,
+            transp: nil,
             attendees: []
 end
 
